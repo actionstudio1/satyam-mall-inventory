@@ -343,18 +343,20 @@ function doPost(e) {
         const fileName = body.fileName || 'upload_' + Date.now();
         const mimeType = body.mimeType || 'application/octet-stream';
         const fileData = body.fileData;
-        const folderId = body.folderId;
 
         if (!fileData) return createJsonResponse({ status: 'error', message: 'No file data' });
 
         const decodedData = Utilities.base64Decode(fileData);
         const blob = Utilities.newBlob(decodedData, mimeType, fileName);
 
+        // Get or create Inventory Uploads folder
         let folder;
-        try {
-          folder = folderId ? DriveApp.getFolderById(folderId) : DriveApp.getRootFolder();
-        } catch (e) {
-          folder = DriveApp.getRootFolder();
+        const folderName = 'Satyam Mall Inventory Uploads';
+        const folders = DriveApp.getFoldersByName(folderName);
+        if (folders.hasNext()) {
+          folder = folders.next();
+        } else {
+          folder = DriveApp.createFolder(folderName);
         }
 
         const file = folder.createFile(blob);

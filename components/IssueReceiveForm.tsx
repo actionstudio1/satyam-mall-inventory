@@ -74,13 +74,13 @@ const IssueReceiveForm: React.FC<Props> = ({ type, inventory, onSuccess }) => {
     let uploadedFileUrl = '';
     if (type === TransactionType.RECEIVE && selectedFile) {
       setUploadingFile(true);
-      try {
-        const fileResult = await uploadFileToDrive(selectedFile, formData.itemName);
-        if (fileResult.success && fileResult.fileUrl) uploadedFileUrl = fileResult.fileUrl;
-      } catch (error) {
-        console.error('File upload error:', error);
-      }
+      const fileResult = await uploadFileToDrive(selectedFile, formData.itemName);
       setUploadingFile(false);
+      if (fileResult.success && fileResult.fileUrl) {
+        uploadedFileUrl = fileResult.fileUrl;
+      } else {
+        setMessage({ type: 'error', text: fileResult.error || 'File upload failed. Transaction will continue without file.' });
+      }
     }
 
     const success = await submitTransaction({

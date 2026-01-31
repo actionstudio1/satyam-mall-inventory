@@ -116,27 +116,38 @@ export const updateInventoryQuantity = async (itemName: string, newQuantity: num
   }
 };
 
-export const uploadFileToDrive = async (file: File, itemName: string): Promise<{ success: boolean; fileUrl?: string }> => {
+export const uploadFileToDrive = async (file: File, itemName: string): Promise<{ success: boolean; fileUrl?: string; error?: string }> => {
   try {
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      return { success: false, error: 'File too large (max 10MB)' };
+    }
+
     const base64Data = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve((reader.result as string).split(',')[1]);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+
     const response = await fetch(getStoredConfig(), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         action: 'uploadFile',
-        fileName: `${itemName}_${Date.now()}_${file.name}`,
+        fileName: `${itemName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${file.name}`,
         mimeType: file.type,
         fileData: base64Data
       })
     });
+
     const result = await response.json();
-    return result.status === 'success' ? { success: true, fileUrl: result.fileUrl } : { success: false };
-  } catch {
-    return { success: false };
+    if (result.status === 'success') {
+      return { success: true, fileUrl: result.fileUrl };
+    }
+    return { success: false, error: result.message || 'Upload failed' };
+  } catch (err) {
+    console.error('Upload error:', err);
+    return { success: false, error: 'Network error' };
   }
 };
