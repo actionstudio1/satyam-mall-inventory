@@ -6,6 +6,24 @@ const GOOGLE_DRIVE_FOLDER_ID = '1miMudOBbLVGNop-1VRbsHYsc3jKaJG7B';
 export const getStoredConfig = (): string => localStorage.getItem('satyam_mall_sheet_url') || GOOGLE_SHEET_API_URL;
 export const saveConfig = (url: string) => localStorage.setItem('satyam_mall_sheet_url', url);
 
+// User Login
+export const loginUser = async (email: string, password: string): Promise<{ success: boolean; user?: { email: string; name: string; role: string }; message?: string }> => {
+  try {
+    const response = await fetch(getStoredConfig(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'login', email, password })
+    });
+    const result = await response.json();
+    if (result.status === 'success') {
+      return { success: true, user: result.user };
+    }
+    return { success: false, message: result.message || 'Login failed' };
+  } catch {
+    return { success: false, message: 'Connection error. Please try again.' };
+  }
+};
+
 export const fetchInventory = async (): Promise<InventoryItem[]> => {
   try {
     const response = await fetch(`${getStoredConfig()}?sheet=Inventory`);

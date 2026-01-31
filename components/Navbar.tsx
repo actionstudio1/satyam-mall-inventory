@@ -2,7 +2,8 @@ import React from 'react';
 import { LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Box, FileText, LogOut, User } from 'lucide-react';
 
 interface UserSession {
-  username: string;
+  email: string;
+  name: string;
   role: string;
   loginTime: string;
 }
@@ -59,7 +60,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, currentUser, o
                 <User size={14} className="text-primary-600" />
               </div>
               <div className="text-sm">
-                <p className="font-medium text-gray-800 leading-tight">{currentUser?.username}</p>
+                <p className="font-medium text-gray-800 leading-tight">{currentUser?.name || currentUser?.email}</p>
                 <p className="text-xs text-gray-500 leading-tight">{currentUser?.role}</p>
               </div>
             </div>

@@ -1,31 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Box, Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { loginUser } from '../services/sheetService';
 
 interface LoginProps {
-  onLogin: (username: string) => void;
+  onLogin: (user: { email: string; name: string; role: string }) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const USERS = [
-    { username: 'admin', password: 'admin123', role: 'Admin' },
-    { username: 'manager', password: 'manager123', role: 'Manager' },
-    { username: 'staff', password: 'staff123', role: 'Staff' }
-  ];
-
-  // Load saved credentials on mount
   useEffect(() => {
     const savedCredentials = localStorage.getItem('satyam_mall_saved_login');
     if (savedCredentials) {
       try {
-        const { username: savedUser, password: savedPass } = JSON.parse(savedCredentials);
-        setUsername(savedUser);
+        const { email: savedEmail, password: savedPass } = JSON.parse(savedCredentials);
+        setEmail(savedEmail);
         setPassword(savedPass);
         setRememberMe(true);
       } catch {
@@ -39,28 +33,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    const result = await loginUser(email.trim(), password.trim());
 
-    const user = USERS.find(
-      u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password.trim()
-    );
-
-    if (user) {
-      // Save credentials if remember me is checked
+    if (result.success && result.user) {
       if (rememberMe) {
-        localStorage.setItem('satyam_mall_saved_login', JSON.stringify({ username: user.username, password: password.trim() }));
+        localStorage.setItem('satyam_mall_saved_login', JSON.stringify({ email: result.user.email, password: password.trim() }));
       } else {
         localStorage.removeItem('satyam_mall_saved_login');
       }
 
       localStorage.setItem('satyam_mall_user', JSON.stringify({
-        username: user.username,
-        role: user.role,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.user.role,
         loginTime: new Date().toISOString()
       }));
-      onLogin(user.username);
+
+      onLogin(result.user);
     } else {
-      setError('Invalid username or password');
+      setError(result.message || 'Login failed');
     }
     setLoading(false);
   };
@@ -82,16 +73,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
-                  type="text"
+                  type="email"
                   required
-                  placeholder="Enter username"
+                  placeholder="Enter email"
                   className="input-field pl-10"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                 />
               </div>

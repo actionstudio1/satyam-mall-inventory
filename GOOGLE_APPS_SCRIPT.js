@@ -19,12 +19,33 @@
  */
 
 // ==================== SETUP FUNCTION ====================
-// Run this ONCE to create sheets with proper headers
-
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // -------- Create/Setup Inventory Sheet --------
+  // -------- Create Users Sheet --------
+  let usersSheet = ss.getSheetByName('Users');
+  if (!usersSheet) {
+    usersSheet = ss.insertSheet('Users');
+  } else {
+    usersSheet.clear();
+  }
+
+  const usersHeaders = ['Email', 'Password', 'Name', 'Role', 'Status', 'CreatedAt'];
+  usersSheet.getRange(1, 1, 1, usersHeaders.length).setValues([usersHeaders]);
+  usersSheet.getRange(1, 1, 1, usersHeaders.length).setFontWeight('bold').setBackground('#4f46e5').setFontColor('white');
+
+  // Add default admin user
+  const defaultAdmin = ['admin@satyammall.com', 'admin123', 'Administrator', 'Admin', 'Active', new Date()];
+  usersSheet.getRange(2, 1, 1, defaultAdmin.length).setValues([defaultAdmin]);
+
+  usersSheet.setColumnWidth(1, 200);  // Email
+  usersSheet.setColumnWidth(2, 120);  // Password
+  usersSheet.setColumnWidth(3, 150);  // Name
+  usersSheet.setColumnWidth(4, 100);  // Role
+  usersSheet.setColumnWidth(5, 80);   // Status
+  usersSheet.setColumnWidth(6, 150);  // CreatedAt
+
+  // -------- Create Inventory Sheet --------
   let invSheet = ss.getSheetByName('Inventory');
   if (!invSheet) {
     invSheet = ss.insertSheet('Inventory');
@@ -32,20 +53,18 @@ function setupSheets() {
     invSheet.clear();
   }
 
-  // Inventory Headers
   const invHeaders = ['ID', 'Name', 'Category', 'Quantity', 'Unit', 'MinLevel'];
   invSheet.getRange(1, 1, 1, invHeaders.length).setValues([invHeaders]);
-  invSheet.getRange(1, 1, 1, invHeaders.length).setFontWeight('bold').setBackground('#0ea5e9').setFontColor('white');
+  invSheet.getRange(1, 1, 1, invHeaders.length).setFontWeight('bold').setBackground('#059669').setFontColor('white');
 
-  // Format columns
-  invSheet.setColumnWidth(1, 50);   // ID
-  invSheet.setColumnWidth(2, 200);  // Name
-  invSheet.setColumnWidth(3, 120);  // Category
-  invSheet.setColumnWidth(4, 80);   // Quantity
-  invSheet.setColumnWidth(5, 80);   // Unit
-  invSheet.setColumnWidth(6, 80);   // MinLevel
+  invSheet.setColumnWidth(1, 50);
+  invSheet.setColumnWidth(2, 200);
+  invSheet.setColumnWidth(3, 120);
+  invSheet.setColumnWidth(4, 80);
+  invSheet.setColumnWidth(5, 80);
+  invSheet.setColumnWidth(6, 80);
 
-  // -------- Create/Setup Transactions Sheet --------
+  // -------- Create Transactions Sheet --------
   let transSheet = ss.getSheetByName('Transactions');
   if (!transSheet) {
     transSheet = ss.insertSheet('Transactions');
@@ -53,34 +72,30 @@ function setupSheets() {
     transSheet.clear();
   }
 
-  // Transaction Headers
   const transHeaders = ['Date', 'Type', 'ItemName', 'Quantity', 'Unit', 'Location', 'PersonName', 'Notes'];
   transSheet.getRange(1, 1, 1, transHeaders.length).setValues([transHeaders]);
-  transSheet.getRange(1, 1, 1, transHeaders.length).setFontWeight('bold').setBackground('#22c55e').setFontColor('white');
+  transSheet.getRange(1, 1, 1, transHeaders.length).setFontWeight('bold').setBackground('#d97706').setFontColor('white');
 
-  // Format columns
-  transSheet.setColumnWidth(1, 150);  // Date
-  transSheet.setColumnWidth(2, 80);   // Type
-  transSheet.setColumnWidth(3, 200);  // ItemName
-  transSheet.setColumnWidth(4, 80);   // Quantity
-  transSheet.setColumnWidth(5, 80);   // Unit
-  transSheet.setColumnWidth(6, 120);  // Location
-  transSheet.setColumnWidth(7, 150);  // PersonName
-  transSheet.setColumnWidth(8, 200);  // Notes
+  transSheet.setColumnWidth(1, 150);
+  transSheet.setColumnWidth(2, 80);
+  transSheet.setColumnWidth(3, 200);
+  transSheet.setColumnWidth(4, 80);
+  transSheet.setColumnWidth(5, 80);
+  transSheet.setColumnWidth(6, 120);
+  transSheet.setColumnWidth(7, 150);
+  transSheet.setColumnWidth(8, 200);
 
-  // Format date column
   transSheet.getRange('A:A').setNumberFormat('dd-mmm-yyyy hh:mm');
 
-  // Delete default Sheet1 if exists
+  // Delete default Sheet1
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && ss.getSheets().length > 1) {
     ss.deleteSheet(sheet1);
   }
 
-  // Show success message
   SpreadsheetApp.getUi().alert(
     'Setup Complete!',
-    'Inventory and Transactions sheets have been created.\n\nNext Steps:\n1. Click Deploy > New Deployment\n2. Select Web App\n3. Set "Who has access" to "Anyone"\n4. Copy the URL and paste in your app Settings',
+    'Created sheets: Users, Inventory, Transactions\n\nDefault Admin:\nEmail: admin@satyammall.com\nPassword: admin123\n\nYou can add more users in the Users sheet.',
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
@@ -88,7 +103,6 @@ function setupSheets() {
 
 // ==================== API FUNCTIONS ====================
 
-// Handle GET requests - Fetch data
 function doGet(e) {
   try {
     const sheetName = e.parameter.sheet || 'Inventory';
@@ -100,10 +114,7 @@ function doGet(e) {
     }
 
     const data = sheet.getDataRange().getValues();
-
-    if (data.length === 0) {
-      return createJsonResponse([]);
-    }
+    if (data.length === 0) return createJsonResponse([]);
 
     const headers = data[0].map(h => String(h).toLowerCase().replace(/\s+/g, ''));
     const rows = data.slice(1);
@@ -112,29 +123,154 @@ function doGet(e) {
       const obj = {};
       headers.forEach((header, i) => {
         let value = row[i];
-        // Convert dates to ISO string
-        if (value instanceof Date) {
-          value = value.toISOString();
-        }
+        if (value instanceof Date) value = value.toISOString();
         obj[header] = value;
       });
-      // Add row index for reference
       obj._rowIndex = index + 2;
       return obj;
     });
 
     return createJsonResponse(result);
-
   } catch (error) {
     return createJsonResponse({ error: error.toString() });
   }
 }
 
-// Handle POST requests - Add/Update data
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // -------- User Login --------
+    if (body.action === 'login') {
+      const usersSheet = ss.getSheetByName('Users');
+      if (!usersSheet) {
+        return createJsonResponse({ status: 'error', message: 'Users sheet not found. Run setupSheets first.' });
+      }
+
+      const data = usersSheet.getDataRange().getValues();
+      const email = String(body.email).trim().toLowerCase();
+      const password = String(body.password).trim();
+
+      for (let i = 1; i < data.length; i++) {
+        const userEmail = String(data[i][0]).trim().toLowerCase();
+        const userPassword = String(data[i][1]).trim();
+        const userName = String(data[i][2]).trim();
+        const userRole = String(data[i][3]).trim();
+        const userStatus = String(data[i][4]).trim();
+
+        if (userEmail === email && userPassword === password) {
+          if (userStatus.toLowerCase() !== 'active') {
+            return createJsonResponse({ status: 'error', message: 'Account is inactive. Contact admin.' });
+          }
+          return createJsonResponse({
+            status: 'success',
+            user: {
+              email: userEmail,
+              name: userName,
+              role: userRole
+            }
+          });
+        }
+      }
+
+      return createJsonResponse({ status: 'error', message: 'Invalid email or password' });
+    }
+
+    // -------- Add User --------
+    if (body.action === 'addUser') {
+      const usersSheet = ss.getSheetByName('Users');
+      if (!usersSheet) {
+        return createJsonResponse({ status: 'error', message: 'Users sheet not found' });
+      }
+
+      // Check if email already exists
+      const data = usersSheet.getDataRange().getValues();
+      const newEmail = String(body.email).trim().toLowerCase();
+
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim().toLowerCase() === newEmail) {
+          return createJsonResponse({ status: 'error', message: 'Email already exists' });
+        }
+      }
+
+      const newUser = [
+        body.email,
+        body.password,
+        body.name || '',
+        body.role || 'Staff',
+        'Active',
+        new Date()
+      ];
+      usersSheet.appendRow(newUser);
+      return createJsonResponse({ status: 'success', message: 'User created successfully' });
+    }
+
+    // -------- Get All Users --------
+    if (body.action === 'getUsers') {
+      const usersSheet = ss.getSheetByName('Users');
+      if (!usersSheet) {
+        return createJsonResponse({ status: 'error', message: 'Users sheet not found' });
+      }
+
+      const data = usersSheet.getDataRange().getValues();
+      const users = [];
+
+      for (let i = 1; i < data.length; i++) {
+        users.push({
+          email: data[i][0],
+          name: data[i][2],
+          role: data[i][3],
+          status: data[i][4],
+          createdAt: data[i][5]
+        });
+      }
+
+      return createJsonResponse({ status: 'success', users: users });
+    }
+
+    // -------- Update User --------
+    if (body.action === 'updateUser') {
+      const usersSheet = ss.getSheetByName('Users');
+      if (!usersSheet) {
+        return createJsonResponse({ status: 'error', message: 'Users sheet not found' });
+      }
+
+      const data = usersSheet.getDataRange().getValues();
+      const targetEmail = String(body.email).trim().toLowerCase();
+
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim().toLowerCase() === targetEmail) {
+          if (body.name) usersSheet.getRange(i + 1, 3).setValue(body.name);
+          if (body.role) usersSheet.getRange(i + 1, 4).setValue(body.role);
+          if (body.status) usersSheet.getRange(i + 1, 5).setValue(body.status);
+          if (body.password) usersSheet.getRange(i + 1, 2).setValue(body.password);
+          return createJsonResponse({ status: 'success', message: 'User updated successfully' });
+        }
+      }
+
+      return createJsonResponse({ status: 'error', message: 'User not found' });
+    }
+
+    // -------- Delete User --------
+    if (body.action === 'deleteUser') {
+      const usersSheet = ss.getSheetByName('Users');
+      if (!usersSheet) {
+        return createJsonResponse({ status: 'error', message: 'Users sheet not found' });
+      }
+
+      const data = usersSheet.getDataRange().getValues();
+      const targetEmail = String(body.email).trim().toLowerCase();
+
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).trim().toLowerCase() === targetEmail) {
+          usersSheet.deleteRow(i + 1);
+          return createJsonResponse({ status: 'success', message: 'User deleted successfully' });
+        }
+      }
+
+      return createJsonResponse({ status: 'error', message: 'User not found' });
+    }
 
     // -------- Add Transaction --------
     if (body.action === 'addTransaction') {
@@ -145,7 +281,6 @@ function doPost(e) {
         return createJsonResponse({ status: 'error', message: 'Sheets not found. Run setupSheets first.' });
       }
 
-      // Add transaction row
       const transactionRow = [
         new Date(),
         body.type || '',
@@ -158,7 +293,6 @@ function doPost(e) {
       ];
       tSheet.appendRow(transactionRow);
 
-      // Update inventory quantity
       const invData = iSheet.getDataRange().getValues();
       let itemFound = false;
 
@@ -169,156 +303,66 @@ function doPost(e) {
         if (itemName === searchName) {
           const currentQty = Number(invData[i][3]) || 0;
           const changeQty = Number(body.quantity) || 0;
-
-          let newQty;
-          if (body.type === 'RECEIVE') {
-            newQty = currentQty + changeQty;
-          } else {
-            newQty = currentQty - changeQty;
-          }
-
-          // Prevent negative quantity
+          let newQty = body.type === 'RECEIVE' ? currentQty + changeQty : currentQty - changeQty;
           if (newQty < 0) newQty = 0;
-
           iSheet.getRange(i + 1, 4).setValue(newQty);
           itemFound = true;
           break;
         }
       }
 
-      // If receiving new item that doesn't exist, add it
       if (!itemFound && body.type === 'RECEIVE') {
         const newId = invData.length;
-        const newRow = [
-          newId,
-          body.itemName,
-          body.category || 'Others',
-          Number(body.quantity) || 0,
-          body.unit || 'pcs',
-          Number(body.minLevel) || 5
-        ];
+        const newRow = [newId, body.itemName, body.category || 'Others', Number(body.quantity) || 0, body.unit || 'pcs', Number(body.minLevel) || 5];
         iSheet.appendRow(newRow);
       }
 
       return createJsonResponse({ status: 'success', message: 'Transaction recorded' });
     }
 
-    // -------- Update Inventory Quantity --------
+    // -------- Update Inventory --------
     if (body.action === 'updateInventory') {
       const iSheet = ss.getSheetByName('Inventory');
-
-      if (!iSheet) {
-        return createJsonResponse({ status: 'error', message: 'Inventory sheet not found' });
-      }
+      if (!iSheet) return createJsonResponse({ status: 'error', message: 'Inventory sheet not found' });
 
       const data = iSheet.getDataRange().getValues();
-
       for (let i = 1; i < data.length; i++) {
-        const itemName = String(data[i][1]).trim().toLowerCase();
-        const searchName = String(body.itemName).trim().toLowerCase();
-
-        if (itemName === searchName) {
+        if (String(data[i][1]).trim().toLowerCase() === String(body.itemName).trim().toLowerCase()) {
           iSheet.getRange(i + 1, 4).setValue(Number(body.newQuantity));
           return createJsonResponse({ status: 'success', message: 'Quantity updated' });
         }
       }
-
-      return createJsonResponse({ status: 'error', message: 'Item not found: ' + body.itemName });
-    }
-
-    // -------- Add New Inventory Item --------
-    if (body.action === 'addInventoryItem') {
-      const iSheet = ss.getSheetByName('Inventory');
-
-      if (!iSheet) {
-        return createJsonResponse({ status: 'error', message: 'Inventory sheet not found' });
-      }
-
-      const data = iSheet.getDataRange().getValues();
-      const newId = data.length;
-
-      const newRow = [
-        newId,
-        body.name || '',
-        body.category || 'Others',
-        Number(body.quantity) || 0,
-        body.unit || 'pcs',
-        Number(body.minLevel) || 5
-      ];
-
-      iSheet.appendRow(newRow);
-      return createJsonResponse({ status: 'success', message: 'Item added', id: newId });
-    }
-
-    // -------- Delete Inventory Item --------
-    if (body.action === 'deleteInventoryItem') {
-      const iSheet = ss.getSheetByName('Inventory');
-
-      if (!iSheet) {
-        return createJsonResponse({ status: 'error', message: 'Inventory sheet not found' });
-      }
-
-      const data = iSheet.getDataRange().getValues();
-
-      for (let i = 1; i < data.length; i++) {
-        const itemName = String(data[i][1]).trim().toLowerCase();
-        const searchName = String(body.itemName).trim().toLowerCase();
-
-        if (itemName === searchName) {
-          iSheet.deleteRow(i + 1);
-          return createJsonResponse({ status: 'success', message: 'Item deleted' });
-        }
-      }
-
       return createJsonResponse({ status: 'error', message: 'Item not found' });
     }
 
-    // -------- Upload File to Google Drive --------
+    // -------- Upload File --------
     if (body.action === 'uploadFile') {
       try {
         const fileName = body.fileName || 'upload_' + Date.now();
         const mimeType = body.mimeType || 'application/octet-stream';
-        const fileData = body.fileData; // Base64 encoded
+        const fileData = body.fileData;
         const folderId = body.folderId;
 
-        if (!fileData) {
-          return createJsonResponse({ status: 'error', message: 'No file data provided' });
-        }
+        if (!fileData) return createJsonResponse({ status: 'error', message: 'No file data' });
 
-        // Decode base64 data
         const decodedData = Utilities.base64Decode(fileData);
         const blob = Utilities.newBlob(decodedData, mimeType, fileName);
 
-        // Get folder or use root
         let folder;
-        if (folderId) {
-          try {
-            folder = DriveApp.getFolderById(folderId);
-          } catch (folderError) {
-            // If folder not found, use root
-            folder = DriveApp.getRootFolder();
-          }
-        } else {
+        try {
+          folder = folderId ? DriveApp.getFolderById(folderId) : DriveApp.getRootFolder();
+        } catch (e) {
           folder = DriveApp.getRootFolder();
         }
 
-        // Create file in folder
         const file = folder.createFile(blob);
-
-        // Set file to be viewable by anyone with link
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
-        const fileUrl = file.getUrl();
-        const fileId = file.getId();
 
         return createJsonResponse({
           status: 'success',
-          message: 'File uploaded successfully',
-          fileUrl: fileUrl,
-          fileId: fileId,
-          fileName: fileName
+          fileUrl: file.getUrl(),
+          fileId: file.getId()
         });
-
       } catch (uploadError) {
         return createJsonResponse({ status: 'error', message: 'Upload failed: ' + uploadError.toString() });
       }
@@ -331,39 +375,8 @@ function doPost(e) {
   }
 }
 
-// Helper function to create JSON response with CORS headers
 function createJsonResponse(data) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
-}
-
-
-// ==================== TEST FUNCTION ====================
-// Run this to test if everything is working
-
-function testSetup() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const invSheet = ss.getSheetByName('Inventory');
-  const transSheet = ss.getSheetByName('Transactions');
-
-  let message = 'Test Results:\n\n';
-
-  if (invSheet) {
-    const invCount = invSheet.getLastRow() - 1;
-    message += 'Inventory Sheet: Found (' + invCount + ' items)\n';
-  } else {
-    message += 'Inventory Sheet: Not Found\n';
-  }
-
-  if (transSheet) {
-    const transCount = transSheet.getLastRow() - 1;
-    message += 'Transactions Sheet: Found (' + transCount + ' records)\n';
-  } else {
-    message += 'Transactions Sheet: Not Found\n';
-  }
-
-  message += '\nIf any sheet is missing, run setupSheets() first.';
-
-  SpreadsheetApp.getUi().alert('Setup Test', message, SpreadsheetApp.getUi().ButtonSet.OK);
 }

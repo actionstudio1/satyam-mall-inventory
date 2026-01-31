@@ -10,7 +10,8 @@ import { fetchInventory, fetchTransactions } from './services/sheetService';
 import { Loader2 } from 'lucide-react';
 
 interface UserSession {
-  username: string;
+  email: string;
+  name: string;
   role: string;
   loginTime: string;
 }
@@ -48,9 +49,13 @@ const App: React.FC = () => {
     if (isAuthenticated) loadData();
   }, [isAuthenticated]);
 
-  const handleLogin = () => {
-    const storedUser = localStorage.getItem('satyam_mall_user');
-    if (storedUser) setCurrentUser(JSON.parse(storedUser));
+  const handleLogin = (user: { email: string; name: string; role: string }) => {
+    setCurrentUser({
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      loginTime: new Date().toISOString()
+    });
     setIsAuthenticated(true);
   };
 
