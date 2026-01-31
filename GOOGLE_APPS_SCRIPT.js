@@ -9,14 +9,26 @@
  * 3. Delete all existing code
  * 4. Copy-paste this entire code
  * 5. Click "Run" > "setupSheets" (first time only)
- * 6. Authorize the script when prompted
- * 7. Deploy > New Deployment > Web App
+ * 6. Click "Run" > "authorizeDrive" (to enable file uploads)
+ * 7. Authorize the script when prompted
+ * 8. Deploy > New Deployment > Web App
  *    - Execute as: Me
  *    - Who has access: Anyone
- * 8. Copy the Web App URL and paste in app Settings
+ * 9. Copy the Web App URL and paste in app Settings
  *
  * =====================================================
  */
+
+// ==================== AUTHORIZE DRIVE ====================
+// Run this function ONCE to grant Drive permissions
+function authorizeDrive() {
+  const testFolder = DriveApp.getRootFolder();
+  SpreadsheetApp.getUi().alert(
+    'Drive Authorized!',
+    'Google Drive access granted successfully.\n\nNow redeploy your Web App:\n1. Deploy > Manage Deployments\n2. Click pencil icon\n3. Select New Version\n4. Click Deploy',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
 
 // ==================== SETUP FUNCTION ====================
 function setupSheets() {
