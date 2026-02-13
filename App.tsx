@@ -88,7 +88,7 @@ const App: React.FC = () => {
       case 'inventory':
         return <InventoryTable inventory={inventory} onRefresh={loadData} />;
       case 'reports':
-        return <Reports transactions={transactions} />;
+        return <Reports transactions={transactions} currentUser={currentUser} />;
       default:
         return null;
     }
